@@ -1,0 +1,80 @@
+name: Costruisci APK Android
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Installa le dipendenze
+        run: npm ci
+
+      - name: Costruisci l'app web
+        run: npm run build
+
+      - name: Crea il progetto Android
+        run: npx cap add android
+
+      - name: Icone dell'app
+        continue-on-error: true
+        run: >
+          npx --yes @capacitor/assets@3 generate --android
+          --iconBackgroundColor '#0e1116' --iconBackgroundColorDark '#0e1116'
+          --splashBackgroundColor '#0e1116' --splashBackgroundColorDark '#0e1116'
+
+      - name: Permessi fotocamera e numero di versione
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          sed -i 's#</manifest>#    <uses-permission android:name="android.permission.CAMERA" />\n</manifest>#' android/app/src/main/AndroidManifest.xml
+          sed -i "s/versionCode 1$/versionCode ${{ github.run_number }}/; s/versionName \"1.0\"/versionName \"$VERSION.${{ github.run_number }}\"/" android/app/build.gradle
+          grep -n "versionCode\|versionName" android/app/build.gradle
+          echo "APP_VERSION=$VERSION.${{ github.run_number }}" >> "$GITHUB_ENV"
+
+      - name: Sincronizza
+        run: npx cap sync android
+
+      - name: Chiave di firma fissa (così gli aggiornamenti si installano sopra)
+        run: mkdir -p ~/.android && cp keystore/debug.keystore ~/.android/debug.keystore
+
+      - name: Compila l'APK
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Rinomina l'APK
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk ContaPezzi.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ContaPezzi-${{ env.APP_VERSION }}
+          path: ContaPezzi.apk
+
+      - name: Pubblica nella pagina Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.APP_VERSION }}
+          name: Conta Pezzi ${{ env.APP_VERSION }}
+          body: |
+            Scarica **ContaPezzi.apk** qui sotto dal telefono Android e aprilo per installarlo.
+            Commit: ${{ github.sha }}
+          files: ContaPezzi.apk
+          make_latest: true

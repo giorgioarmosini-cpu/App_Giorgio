@@ -1,0 +1,36 @@
+{
+  "name": "conta-pezzi",
+  "version": "1.0.0",
+  "description": "App Android per riconoscere e contare pezzi da foto e video",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/giorgioarmosini-cpu/app_giorgio.git"
+  },
+  "bugs": {
+    "url": "https://github.com/giorgioarmosini-cpu/app_giorgio/issues"
+  },
+  "homepage": "https://github.com/giorgioarmosini-cpu/app_giorgio#readme",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.10.0",
+    "@capacitor/android": "^8.6.2",
+    "@capacitor/app": "^8.1.2",
+    "@capacitor/core": "^8.6.2",
+    "@capacitor/filesystem": "^8.1.5",
+    "@capacitor/share": "^8.0.3",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.9",
+    "xlsx": "^0.18.5",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.6.2",
+    "vite": "^8.3.8"
+  },
+  "private": true,
+  "type": "module"
+}

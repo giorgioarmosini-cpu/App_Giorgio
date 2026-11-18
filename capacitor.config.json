@@ -1,0 +1,6 @@
+{
+  "appId": "com.giorgioarmosini.contapezzi",
+  "appName": "Conta Pezzi",
+  "webDir": "dist",
+  "android": { "allowMixedContent": false }
+}
