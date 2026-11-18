@@ -1,5 +1,5 @@
 // Archivio locale sul telefono (IndexedDB): catalogo, conteggi e impostazioni.
-const NAME = "conta-pezzi", VERSION = 1;
+const NAME = "conta-pezzi", VERSION = 2;
 let dbp;
 
 function open() {
@@ -10,6 +10,7 @@ function open() {
       if (!db.objectStoreNames.contains("items")) db.createObjectStore("items", { keyPath: "id" });
       if (!db.objectStoreNames.contains("sessions")) db.createObjectStore("sessions", { keyPath: "id" });
       if (!db.objectStoreNames.contains("kv")) db.createObjectStore("kv", { keyPath: "k" });
+      if (!db.objectStoreNames.contains("profiles")) db.createObjectStore("profiles", { keyPath: "id" });
     };
     r.onsuccess = () => resolve(r.result);
     r.onerror = () => reject(r.error);

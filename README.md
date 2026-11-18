@@ -24,27 +24,46 @@ Ogni volta che il codice cambia su `main`, GitHub costruisce l'APK da solo
 ## Come si usa
 
 1. **Catalogo** → *Nuovo articolo*: nome, codice, categoria, associazioni/note
-   (fornitore, ubicazione, prezzo…) e 1–5 **foto di riferimento** con alcuni
-   pezzi ben separati.
-2. **Conta** → *Nuovo conteggio* → **Foto**, **Video** o **Galleria**.
-3. Nella schermata **Verifica** controlla il risultato: ogni pezzo ha il contorno
-   del colore del suo articolo; `?` = non riconosciuto, `×N` = pezzi a contatto
-   o sovrapposti.
-   Tocca un pezzo per correggerlo, o usa **− / +** sulle quantità.
-   **Conta con IA** usa l'intelligenza artificiale online (più precisa).
-4. **Salva scansione**: diventa una colonna (S1, S2, …). Ripeti quante volte vuoi.
-5. **PDF** / **Excel**: si apre il menu Condividi (WhatsApp, Mail, Drive, File…).
+   (fornitore, ubicazione, prezzo…) e 1–5 **foto di riferimento**.
+2. **Profili** → *Nuovo profilo* (consigliato, indispensabile per pezzi piccoli):
+   - scegli gli articoli del profilo e la **risoluzione** (fino a 4000 px);
+   - **Foto campioni**: fotografa alcuni pezzi di ogni articolo, separati, sullo
+     stesso sfondo e **alla stessa distanza** che userai per contare;
+   - tocca i pezzi e indica a quale articolo appartengono (o *Assegna tutti a…*),
+     poi **Impara da questi campioni**. L'app impara **dimensione reale**, colore,
+     forma e fori di ogni articolo; puoi aggiungere altre foto campioni quando vuoi;
+   - regola i criteri: tolleranza, sfondo, compensazione della luce, pezzi a
+     contatto/sovrapposti, separazione, pezzi tagliati dal bordo.
+3. **Conta** → *Nuovo conteggio* → scegli il **profilo** → **Foto**, **Video** o
+   **Galleria**.
+4. **Verifica**: zoom 1×–8×, `#` numera i pezzi. Ogni pezzo ha il contorno del
+   colore del suo articolo; `?` = non riconosciuto, `×N` = gruppo di N pezzi.
+   Tocca un pezzo per correggerlo, o usa **− / +**. **Insegna al profilo** aggiunge
+   i pezzi di questa foto ai campioni: il profilo migliora con l'uso.
+   **Conta con IA** usa l'intelligenza artificiale online.
+5. **Salva scansione**: diventa una colonna (S1, S2, …). Ripeti quante volte vuoi.
+6. **PDF** / **Excel**: si apre il menu Condividi (WhatsApp, Mail, Drive, File…).
+
+### Criteri di separazione e vaglio
+
+- **Risoluzione alta** (2400–4000 px) per vedere pezzi di pochi millimetri.
+- **Sfondo locale**: compensa luce non uniforme e ombre leggere.
+- **Vaglio automatico** di polvere e riflessi (o, con il profilo, tutto ciò che è
+  più piccolo di 1/3 del pezzo più piccolo appreso).
+- **Dimensione reale appresa** dal profilo: distingue articoli uguali ma di misura
+  diversa (es. M3 e M4) e scarta oggetti troppo grandi o piccoli.
+- **Fori** (rondelle, dadi): un pezzo deve avere lo stesso numero di fori.
+- **Pezzi a contatto o sovrapposti**: stimati da area, fori e "centri"; quando i
+  centri tornano, il gruppo viene **tagliato** in pezzi singoli (watershed).
+- **Pezzi tagliati dal bordo**: contati se colore e dimensione sono plausibili,
+  oppure ignorati con l'apposita opzione.
 
 ### Consigli per foto precise
 - Sfondo **uniforme** e di colore diverso dai pezzi (es. foglio bianco per pezzi
   scuri, cartoncino nero per pezzi lucidi o chiari).
-- Luce diffusa, senza ombre forti; foto **dall'alto**.
-- **Pezzi sovrapposti o a contatto**: l'app li riconosce come gruppo e stima
-  quanti sono (×2, ×3…) da area, fori visibili e "centri" dei pezzi. Funziona
-  bene se nella stessa foto c'è anche qualche pezzo singolo (serve come misura)
-  e se ogni pezzo resta visibile almeno per metà. Per mucchi fitti usa
-  **Conta con IA**.
-- Le foto di riferimento vanno fatte sullo stesso tipo di sfondo.
+- Luce diffusa, senza ombre forti; foto **dall'alto**, meglio con un supporto
+  fisso: la distanza deve essere la stessa della foto dei campioni del profilo.
+- Riempi l'inquadratura con l'area dei pezzi: più pixel per pezzo = più precisione.
 
 ## Due modi di riconoscere
 
