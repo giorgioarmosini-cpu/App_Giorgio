@@ -251,7 +251,7 @@ function review(session, { hires, canvas, result, method, extra }) {
     const { counts, unknown } = current();
     $("#rhint", el).innerHTML = st.ai
       ? `Conteggio fatto dall'IA. ${esc(st.ai.note)}`
-      : `${esc(extra || "")} Tocca un pezzo sulla foto per correggerlo. <span class="dot" style="background:#ff3b30"></span>? = non riconosciuto, ×N = pezzi a contatto.`;
+      : `${esc(extra || "")} Tocca un pezzo sulla foto per correggerlo. <span class="dot" style="background:#ff3b30"></span>? = non riconosciuto, ×N = pezzi a contatto o sovrapposti.`;
     const rows = state.items.map((it) => ({ id: it.id, name: it.name, code: it.code, color: it.color, n: counts[it.id] || 0 })).sort((a, b) => b.n - a.n);
     $("#rlist", el).innerHTML = rows.map((r) => `<div class="countrow"><span class="dot" style="background:${r.color}"></span><span class="nm">${esc(r.name)}${r.code ? `<small> ${esc(r.code)}</small>` : ""}</span>
         <button class="step" data-d="-1" data-id="${r.id}">−</button><b data-set="${r.id}">${r.n}</b><button class="step" data-d="1" data-id="${r.id}">+</button></div>`).join("")
@@ -425,7 +425,7 @@ function renderSettings(main) {
         <input type="range" name="minArea" min="1" max="40" step="1" value="${Math.round(s.minArea * 10000)}"><small>Aumentala se l'app conta granelli di polvere o riflessi.</small></label>
       <label>Fotogrammi analizzati nei video: <b id="vfv">${s.videoFrames}</b>
         <input type="range" name="videoFrames" min="3" max="11" step="2" value="${s.videoFrames}"></label>
-      <label class="inline"><input type="checkbox" name="splitTouching" ${s.splitTouching ? "checked" : ""}> Conta i pezzi a contatto (stima dall'area)</label>
+      <label class="inline"><input type="checkbox" name="splitTouching" ${s.splitTouching ? "checked" : ""}> Conta i pezzi a contatto o sovrapposti</label>
       <label class="inline"><input type="checkbox" name="useSize" ${s.useSize ? "checked" : ""}> Usa la dimensione per distinguere gli articoli <small>(solo se fotografi sempre alla stessa distanza)</small></label>
       <button class="btn" id="recalc">Ricalcola il catalogo con queste impostazioni</button>
     </section>

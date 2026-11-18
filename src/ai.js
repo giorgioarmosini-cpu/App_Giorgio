@@ -12,7 +12,7 @@ const Result = z.object({
 const SYSTEM = `Sei un sistema di conteggio pezzi per magazzino e produzione.
 Ricevi le foto di riferimento di alcuni articoli di un catalogo e poi una foto da analizzare.
 Conta con la massima precisione quanti pezzi di ciascun articolo sono visibili nella foto da analizzare.
-Conta anche i pezzi sovrapposti, a contatto o parzialmente coperti, se sono riconoscibili.
+Conta anche i pezzi sovrapposti, ammucchiati, a contatto o parzialmente coperti: esamina con cura i bordi e le parti visibili di ogni pezzo nei mucchi.
 I pezzi che non corrispondono a nessun articolo del catalogo vanno in non_riconosciuti.
 Usa solo gli id articolo forniti. Includi ogni articolo del catalogo, anche con quantità 0.
 In note scrivi in italiano, in una o due frasi, eventuali dubbi (pezzi coperti, foto sfocata, articoli simili).`;

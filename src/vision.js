@@ -166,7 +166,14 @@ export function analyzeCanvas(canvas, opt = {}) {
     d[i] = v;
     hist[v | 0]++;
   }
-  const th = Math.max(otsu(hist, n), 24);
+  // soglia: Otsu, ma mai sopra il "rumore" dello sfondo misurato sui bordi
+  // (altrimenti con pezzi di colori diversi quelli poco contrastati sparirebbero)
+  const bd = [];
+  for (let x = 0; x < w; x += step) bd.push(d[x], d[(h - 1) * w + x]);
+  for (let y = 0; y < h; y += step) bd.push(d[y * w], d[y * w + w - 1]);
+  bd.sort((p, q) => p - q);
+  const noise = bd[Math.floor(bd.length * 0.95)] || 0;
+  const th = Math.max(24, Math.min(otsu(hist, n), noise * 1.5 + 14));
   let mask = new Uint8Array(n);
   for (let i = 0; i < n; i++) mask[i] = d[i] > th ? 1 : 0;
   const r = Math.max(1, Math.round(Math.max(w, h) / 500));
@@ -299,6 +306,7 @@ export function classify(result, items, opt = {}) {
   for (const b of result.blobs) {
     let best = null, bestD = Infinity;
     for (const it of items) for (const s of it.samples || []) {
+      if (s.holes !== undefined && s.holes !== b.f.holes) continue; // numero di fori diverso = articolo diverso
       const dd = distance(b.f, s, o.useSize);
       if (dd < bestD) { bestD = dd; best = it.id; }
     }
@@ -306,41 +314,122 @@ export function classify(result, items, opt = {}) {
     b.item = bestD <= o.tolerance ? best : null;
     b.k = 1;
   }
-  if (o.splitTouching) {
-    // area tipica di un singolo pezzo per articolo = mediana delle aree riconosciute
-    const areas = {}, holesPer = {};
-    for (const b of result.blobs) if (b.item) { (areas[b.item] ||= []).push(b.area); (holesPer[b.item] ||= []).push(b.holes); }
-    const single = {}, holeSingle = {};
-    for (const id in areas) { single[id] = median(areas[id]); holeSingle[id] = Math.round(median(holesPer[id])); }
-    for (const it of items) {
-      // se nella foto non ci sono pezzi singoli di un articolo, uso i fori del campione
-      if (holeSingle[it.id] === undefined && it.samples?.length) holeSingle[it.id] = Math.round(median(it.samples.map((s) => s.holes || 0)));
-    }
-    for (const b of result.blobs) {
-      if (b.item) continue; // forma riconosciuta = pezzo singolo
-      // pezzi a contatto: forma diversa, ma colore simile e area (o fori) multipla di un pezzo singolo
-      let best = null, bestScore = Infinity, bestK = 1;
-      for (const it of items) {
-        if (!single[it.id]) continue;
-        const ratio = b.area / single[it.id];
-        if (ratio < 1.6) continue;
-        let k = Math.round(ratio);
-        const hs = holeSingle[it.id] || 0;
-        if (hs > 0) {
-          if (b.holes % hs !== 0 || b.holes === 0) continue; // i fori devono tornare
-          k = b.holes / hs;
-          if (Math.abs(ratio / k - 1) > 0.35) continue;
-        } else if (b.holes > 0) continue;
-        let cd = Infinity;
-        for (const s of it.samples || []) cd = Math.min(cd, distance(b.f, s, false, true));
-        if (cd > o.tolerance) continue;
-        const score = cd + 3 * Math.abs(ratio / k - 1);
-        if (score < bestScore) { bestScore = score; best = it.id; bestK = k; }
-      }
-      if (best) { b.item = best; b.k = Math.max(2, bestK); b.merged = true; }
-    }
-  }
+  if (o.splitTouching) splitMerged(result, items, o);
   return result;
+}
+
+// Trasformata di distanza (chamfer) dentro il riquadro di un pezzo.
+// Restituisce il valore massimo (raggio inscritto) e i "centri" separati.
+function distancePeaks(result, idx, rs = 0, elong = 1) {
+  const { labels, w } = result, b = result.blobs[idx];
+  const [x0, y0, x1, y1] = b.box, bw = x1 - x0 + 1, bh = y1 - y0 + 1;
+  const D = new Float32Array(bw * bh);
+  for (let y = 0; y < bh; y++) for (let x = 0; x < bw; x++) D[y * bw + x] = labels[(y0 + y) * w + x0 + x] === idx ? 1e9 : 0;
+  const S = Math.SQRT2;
+  for (let y = 0; y < bh; y++) for (let x = 0; x < bw; x++) {
+    const i = y * bw + x;
+    if (!D[i]) continue;
+    let v = D[i];
+    v = Math.min(v, x > 0 ? D[i - 1] + 1 : 1, y > 0 ? D[i - bw] + 1 : 1,
+      x > 0 && y > 0 ? D[i - bw - 1] + S : S, x < bw - 1 && y > 0 ? D[i - bw + 1] + S : S);
+    D[i] = v;
+  }
+  let max = 0;
+  for (let y = bh - 1; y >= 0; y--) for (let x = bw - 1; x >= 0; x--) {
+    const i = y * bw + x;
+    if (!D[i]) continue;
+    let v = D[i];
+    v = Math.min(v, x < bw - 1 ? D[i + 1] + 1 : 1, y < bh - 1 ? D[i + bw] + 1 : 1,
+      x < bw - 1 && y < bh - 1 ? D[i + bw + 1] + S : S, x > 0 && y < bh - 1 ? D[i + bw - 1] + S : S);
+    D[i] = v;
+    if (v > max) max = v;
+  }
+  if (!rs) return { max, peaks: 1 };
+  // massimi locali abbastanza "profondi", poi soppressione dei vicini
+  const cand = [];
+  for (let y = 1; y < bh - 1; y++) for (let x = 1; x < bw - 1; x++) {
+    const i = y * bw + x, v = D[i];
+    if (v < rs * 0.6) continue;
+    let isMax = true;
+    for (let dy = -2; dy <= 2 && isMax; dy++) for (let dx = -2; dx <= 2; dx++) {
+      const xx = x + dx, yy = y + dy;
+      if (xx >= 0 && yy >= 0 && xx < bw && yy < bh && D[yy * bw + xx] > v) { isMax = false; break; }
+    }
+    if (isMax) cand.push([v, x, y]);
+  }
+  cand.sort((p, q) => q[0] - p[0]);
+  // i pezzi allungati hanno una "cresta": allargo la zona di soppressione
+  const keep = [], R2 = (rs * (0.8 + 1.1 * (1 - Math.min(1, elong)))) ** 2;
+  for (const c of cand) if (keep.every((k) => (k[1] - c[1]) ** 2 + (k[2] - c[2]) ** 2 > R2)) keep.push(c);
+  return { max, peaks: keep.length };
+}
+
+// Pezzi a contatto o sovrapposti: un'unica macchia che contiene più pezzi.
+// Stima il numero combinando area, fori visibili e "centri" (per pezzi compatti).
+function splitMerged(result, items, o) {
+  const blobs = result.blobs;
+  const per = {};
+  blobs.forEach((b, i) => { if (b.item) (per[b.item] ||= []).push(i); });
+  const info = {};
+  for (const it of items) {
+    const singles = per[it.id] || [];
+    const samples = it.samples || [];
+    const holesS = singles.length ? median(singles.map((i) => blobs[i].holes)) : median(samples.map((s) => s.holes || 0));
+    const elongS = median(samples.map((s) => s.elong));
+    if (!singles.length) continue; // senza almeno un pezzo singolo nella foto non conosco la scala
+    info[it.id] = {
+      area: median(singles.map((i) => blobs[i].area)),
+      holes: Math.round(holesS),
+      compact: Math.round(holesS) === 0 && elongS > 0.45,
+      elong: elongS,
+      rs: 0,
+      singles,
+    };
+  }
+  const rsOf = (id) => {
+    const inf = info[id];
+    if (!inf.rs) inf.rs = median(inf.singles.slice(0, 15).map((i) => distancePeaks(result, i).max));
+    return inf.rs;
+  };
+  blobs.forEach((b, idx) => {
+    if (b.item) {
+      // forma simile a un pezzo singolo ma più grande: possono essere pezzi sovrapposti
+      const inf = info[b.item];
+      const ratio = inf ? b.area / inf.area : 1;
+      if (!inf || ratio < 1.3) return;
+      let k = ratio >= 1.6 ? Math.round(ratio) : 1;
+      if (inf.holes > 0 && b.holes > inf.holes) k = Math.max(k, Math.ceil(b.holes / inf.holes));
+      if (inf.compact) k = Math.max(k, distancePeaks(result, idx, rsOf(b.item), inf.elong).peaks);
+      while (k > 2 && ratio / k < 0.7) k--; // ogni pezzo sovrapposto resta visibile per almeno metà
+      if (k >= 2 && ratio / k >= 0.45) { b.k = k; b.merged = true; }
+      return;
+    }
+    let best = null, bestScore = Infinity, bestK = 1;
+    for (const it of items) {
+      const inf = info[it.id];
+      if (!inf) continue;
+      const ratio = b.area / inf.area;
+      if (ratio < 1.15) continue;
+      let cd = Infinity;
+      for (const s of it.samples || []) cd = Math.min(cd, distance(b.f, s, false, true));
+      if (cd > o.tolerance) continue;
+      let k = Math.round(ratio);
+      if (inf.holes > 0) {
+        if (b.holes > 0) k = Math.max(k, Math.ceil(b.holes / inf.holes)); // alcuni fori possono essere coperti
+      } else if (inf.compact) {
+        k = Math.max(k, distancePeaks(result, idx, rsOf(it.id), inf.elong).peaks);
+      }
+      while (k > 2 && ratio / k < 0.7) k--; // ogni pezzo sovrapposto resta in buona parte visibile
+      if (k < 2) continue;
+      const fr = ratio / k; // 1 = a contatto, <1 = sovrapposti
+      if (fr > 1.3 || fr < 0.45) continue;
+      let score = cd + 2 * Math.max(0, fr - 1.1) + 2 * Math.max(0, 0.65 - fr);
+      if (inf.holes === 0 && b.holes > 0) score += 1;
+      if (inf.holes > 0 && b.holes === 0) score += 1.5;
+      if (score < bestScore) { bestScore = score; best = it.id; bestK = k; }
+    }
+    if (best) { b.item = best; b.k = bestK; b.merged = true; }
+  });
 }
 
 export function countsOf(result) {

@@ -28,7 +28,8 @@ Ogni volta che il codice cambia su `main`, GitHub costruisce l'APK da solo
    pezzi ben separati.
 2. **Conta** → *Nuovo conteggio* → **Foto**, **Video** o **Galleria**.
 3. Nella schermata **Verifica** controlla il risultato: ogni pezzo ha il contorno
-   del colore del suo articolo; `?` = non riconosciuto, `×N` = pezzi a contatto.
+   del colore del suo articolo; `?` = non riconosciuto, `×N` = pezzi a contatto
+   o sovrapposti.
    Tocca un pezzo per correggerlo, o usa **− / +** sulle quantità.
    **Conta con IA** usa l'intelligenza artificiale online (più precisa).
 4. **Salva scansione**: diventa una colonna (S1, S2, …). Ripeti quante volte vuoi.
@@ -38,7 +39,11 @@ Ogni volta che il codice cambia su `main`, GitHub costruisce l'APK da solo
 - Sfondo **uniforme** e di colore diverso dai pezzi (es. foglio bianco per pezzi
   scuri, cartoncino nero per pezzi lucidi o chiari).
 - Luce diffusa, senza ombre forti; foto **dall'alto**.
-- Pezzi il più possibile separati; quelli a contatto vengono stimati.
+- **Pezzi sovrapposti o a contatto**: l'app li riconosce come gruppo e stima
+  quanti sono (×2, ×3…) da area, fori visibili e "centri" dei pezzi. Funziona
+  bene se nella stessa foto c'è anche qualche pezzo singolo (serve come misura)
+  e se ogni pezzo resta visibile almeno per metà. Per mucchi fitti usa
+  **Conta con IA**.
 - Le foto di riferimento vanno fatte sullo stesso tipo di sfondo.
 
 ## Due modi di riconoscere
